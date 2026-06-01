@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Nacho & Maru"/>
+<meta name="theme-color" content="#0f0f1a"/>
+<title>Nacho & Maru 🍽️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --bg2: #1a1a2e;
+    --bg3: #22223b;
+    --surface: #1e1e30;
+    --surface2: #26263d;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --text2: #a09cb0;
+    --text3: #6b6880;
+    --accent-n: #7eb8f7;
+    --accent-n-bg: rgba(126,184,247,0.12);
+    --accent-m: #f7a8c4;
+    --accent-m-bg: rgba(247,168,196,0.12);
+    --want: #6fcf97;
+    --want-bg: rgba(111,207,151,0.12);
+    --been: #f2994a;
+    --been-bg: rgba(242,153,74,0.12);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
+  
+  /* SPLASH */
+  #splash {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.5s ease;
+  }
+  #splash.hidden { opacity: 0; pointer-events: none; }
+  .splash-emoji { font-size: 52px; margin-bottom: 16px; animation: pulse 2s ease infinite; }
+  .splash-title { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--text); margin-bottom: 6px; }
+  .splash-sub { font-size: 14px; color: var(--text3); }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+  /* USER SELECT */
+  #user-screen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 500; padding: 32px 28px;
+  }
+  .user-screen-title { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); margin-bottom: 8px; text-align: center; }
+  .user-screen-sub { font-size: 14px; color: var(--text3); margin-bottom: 40px; text-align: center; }
+  .user-cards { display: flex; gap: 16px; width: 100%; }
+  .user-card {
+    flex: 1; padding: 24px 12px; border-radius: var(--radius);
+    border: 1px solid var(--border2); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    transition: transform 0.15s, border-color 0.15s;
+    background: var(--surface);
+  }
+  .user-card:active { transform: scale(0.96); }
+  .user-card.nacho { border-color: var(--accent-n); background: var(--accent-n-bg); }
+  .user-card.maru { border-color: var(--accent-m); background: var(--accent-m-bg); }
+  .user-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 22px; }
+  .avatar-n { background: var(--accent-n-bg); color: var(--accent-n); border: 1.5px solid var(--accent-n); }
+  .avatar-m { background: var(--accent-m-bg); color: var(--accent-m); border: 1.5px solid var(--accent-m); }
+  .user-card-name { font-size: 16px; font-weight: 600; }
+
+  /* MAIN APP */
+  #main-app { position: fixed; inset: 0; display: none; flex-direction: column; }
+  #main-app.visible { display: flex; }
+
+  /* HEADER */
+  .app-header {
+    background: var(--bg); padding: 52px 20px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    position: relative; z-index: 10;
+  }
+  .header-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .sync-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface); padding: 5px 10px; border-radius: 20px;
+    font-size: 11px; color: var(--text2); border: 1px solid var(--border);
+  }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); transition: background 0.3s; }
+  .sync-dot.on { background: var(--want); box-shadow: 0 0 6px var(--want); }
+  .who-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px 5px 6px; border-radius: 20px; cursor: pointer;
+    font-size: 12px; font-weight: 500; border: 1px solid var(--border2);
+    background: var(--surface);
+  }
+  .who-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+  .who-dot-n { background: var(--accent-n-bg); color: var(--accent-n); }
+  .who-dot-m { background: var(--accent-m-bg); color: var(--accent-m); }
+
+  /* TAB BAR */
+  .tab-bar {
+    display: flex; background: var(--bg); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    flex: 1; padding: 12px 0; font-size: 12px; font-weight: 500;
+    color: var(--text3); border: none; background: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+  }
+  .tab-btn i { font-size: 18px; }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
+
+  /* PAGES */
+  .page { flex: 1; overflow-y: auto; display: none; -webkit-overflow-scrolling: touch; }
+  .page.active { display: block; }
+
+  /* MAP PAGE */
+  #map-page { position: relative; overflow: hidden; }
+  #map { position: absolute; inset: 0; }
+  .fab {
+    position: absolute; bottom: calc(24px + var(--safe-bottom)); right: 20px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--text); color: var(--bg); border: none; cursor: pointer;
+    font-size: 26px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 10;
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.93); }
+
+  /* LISTS PAGE */
+  #lists-page { padding: 16px 0 calc(20px + var(--safe-bottom)); }
+  .section-header {
+    padding: 4px 20px 10px; font-size: 11px; font-weight: 600;
+    color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .place-card {
+    margin: 0 16px 10px; background: var(--surface);
+    border-radius: var(--radius); border: 1px solid var(--border);
+    overflow: hidden; transition: transform 0.12s;
+  }
+  .place-card:active { transform: scale(0.98); }
+  .place-card-inner { padding: 14px 14px 12px; }
+  .place-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .place-card-name { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .place-card-addr { font-size: 12px; color: var(--text3); margin-top: 3px; line-height: 1.4; }
+  .place-card-note { font-size: 13px; color: var(--text2); margin-top: 8px; line-height: 1.5; font-style: italic; }
+  .place-card-footer { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .cat-badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+  .badge-want { background: var(--want-bg); color: var(--want); }
+  .badge-been { background: var(--been-bg); color: var(--been); }
+  .by-badge { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; margin-left: auto; }
+  .by-n { background: var(--accent-n-bg); color: var(--accent-n); }
+  .by-m { background: var(--accent-m-bg); color: var(--accent-m); }
+  .delete-btn { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px; font-size: 16px; flex-shrink: 0; }
+  .photos-strip { display: flex; gap: 4px; padding: 0 14px 12px; overflow-x: auto; }
+  .photos-strip img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--radius-sm); flex-shrink: 0; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 30px; gap: 12px; }
+  .empty-state i { font-size: 40px; color: var(--text3); }
+  .empty-state p { font-size: 14px; color: var(--text3); text-align: center; line-height: 1.5; }
+
+  /* DRAWER */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; backdrop-filter: blur(2px); }
+  .overlay.open { display: block; }
+  .drawer {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    background: var(--bg2); border-radius: 24px 24px 0 0;
+    border-top: 1px solid var(--border2);
+    transform: translateY(100%); transition: transform 0.36s cubic-bezier(.4,0,.2,1);
+    max-height: 92vh; overflow-y: auto;
+    padding-bottom: calc(24px + var(--safe-bottom));
+  }
+  .drawer.open { transform: translateY(0); }
+  .drawer-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 14px auto 0; }
+  .drawer-head { padding: 16px 22px 4px; }
+  .drawer-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
+  .drawer-sub { font-size: 13px; color: var(--text3); margin-top: 3px; }
+  .drawer-section { padding: 14px 22px 0; }
+  .drawer-label { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px; display: block; }
+  .drawer-input {
+    width: 100%; padding: 12px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2); background: var(--surface2);
+    color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .drawer-input:focus { border-color: var(--text2); }
+  .drawer-input::placeholder { color: var(--text3); }
+  textarea.drawer-input { resize: none; height: 80px; line-height: 1.5; }
+  .places-dropdown {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); margin-top: 4px; overflow: hidden; display: none;
+  }
+  .place-option { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .place-option:last-child { border-bottom: none; }
+  .place-option:active { background: var(--surface); }
+  .place-option-name { font-size: 14px; color: var(--text); font-weight: 500; }
+  .place-option-addr { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .cat-toggle { display: flex; gap: 10px; }
+  .cat-btn {
+    flex: 1; padding: 12px 8px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2); background: var(--surface2);
+    color: var(--text3); font-size: 13px; font-weight: 500; cursor: pointer;
+    text-align: center; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .cat-btn i { font-size: 16px; }
+  .cat-btn.sel-want { background: var(--want-bg); color: var(--want); border-color: var(--want); }
+  .cat-btn.sel-been { background: var(--been-bg); color: var(--been); border-color: var(--been); }
+  .photo-label {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-radius: var(--radius-sm);
+    border: 1px dashed var(--border2); cursor: pointer; color: var(--text3); font-size: 13px;
+  }
+  .photo-label i { font-size: 20px; }
+  .photo-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .photo-preview-thumb { width: 68px; height: 68px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .save-btn {
+    width: calc(100% - 44px); margin: 18px 22px 0;
+    padding: 15px; border-radius: var(--radius-sm);
+    background: var(--text); color: var(--bg);
+    border: none; font-size: 15px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .save-btn:disabled { opacity: 0.4; }
+  .save-btn:active { transform: scale(0.98); }
+  .search-hint { font-size: 12px; color: var(--text3); padding: 10px 14px; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-emoji">🍽️</div>
+  <div class="splash-title">Nacho & Maru</div>
+  <div class="splash-sub">Cargando el mapa...</div>
+</div>
+
+<!-- USER SELECT -->
+<div id="user-screen">
+  <div class="user-screen-title">Nacho & Maru</div>
+  <div class="user-screen-sub">¿Quién está usando la app?</div>
+  <div class="user-cards">
+    <div class="user-card nacho" onclick="setUser('Nacho')">
+      <div class="user-avatar avatar-n">N</div>
+      <div class="user-card-name" style="color:var(--accent-n)">Nacho</div>
+    </div>
+    <div class="user-card maru" onclick="setUser('Maru')">
+      <div class="user-avatar avatar-m">M</div>
+      <div class="user-card-name" style="color:var(--accent-m)">Maru</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app">
+  <div class="app-header">
+    <div class="header-title">🍽️ Nacho & Maru</div>
+    <div class="header-right">
+      <div class="sync-pill"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">...</span></div>
+      <div class="who-pill" id="who-pill" onclick="switchUser()">
+        <div class="who-dot" id="who-dot"></div>
+        <span id="who-name"></span>
+        <i class="ti ti-chevron-down" style="font-size:13px;color:var(--text3)"></i>
+      </div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showPage('map-page', this)" id="tab-map">
+      <i class="ti ti-map"></i><span>Mapa</span>
+    </button>
+    <button class="tab-btn" onclick="showPage('lists-page', this)" id="tab-lists">
+      <i class="ti ti-list"></i><span>Lugares</span>
+    </button>
+  </div>
+  <div class="page active" id="map-page">
+    <div id="map"></div>
+    <button class="fab" onclick="openDrawer()"><i class="ti ti-plus"></i></button>
+  </div>
+  <div class="page" id="lists-page">
+    <div id="lists-content"></div>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-head">
+    <div class="drawer-title">Agregar lugar</div>
+    <div class="drawer-sub">Buscá el restaurante o bar</div>
+  </div>
+  <div class="drawer-section">
+    <span class="drawer-label">Buscar</span>
+    <input class="drawer-input" id="search-input" type="text" placeholder="Ej: Don Julio, El Preferido..." oninput="onSearchInput()" autocomplete="off"/>
+    <div class="places-dropdown" id="places-dropdown"></div>
+  </div>
+  <div id="form-body" style="display:none;">
+    <div class="drawer-section">
+      <span class="drawer-label">Categoría</span>
+      <div class="cat-toggle">
+        <div class="cat-btn sel-want" id="btn-want" onclick="setCat('want')"><i class="ti ti-bookmark"></i> Quiero ir</div>
+        <div class="cat-btn" id="btn-been" onclick="setCat('been')"><i class="ti ti-star"></i> Ya fui</div>
+      </div>
+    </div>
+    <div class="drawer-section">
+      <span class="drawer-label">Comentario</span>
+      <textarea class="drawer-input" id="note-input" placeholder="Ej: pedir el asado, ir un martes, reservar..."></textarea>
+    </div>
+    <div class="drawer-section">
+      <span class="drawer-label">Fotos</span>
+      <label class="photo-label" for="photo-input">
+        <i class="ti ti-camera"></i> Agregar fotos
+      </label>
+      <input type="file" id="photo-input" multiple accept="image/*" style="display:none" onchange="onPhotos()"/>
+      <div class="photo-row" id="photo-row"></div>
+    </div>
+  </div>
+  <button class="save-btn" id="save-btn" style="display:none" onclick="savePlace()">Guardar lugar</button>
+</div>
+
+<script>
+const GKEY = 'AIzaSyASrUzGUHl-QHph1yTjjr_RAX-DY-FCwqg';
+const FBC = {
+  apiKey:"AIzaSyBaf7eSQnp1cpbbTE-2k81KIoq7j4rleSI",
+  authDomain:"restaurantes-nacho-y-maru.firebaseapp.com",
+  databaseURL:"https://restaurantes-nacho-y-maru-default-rtdb.firebaseio.com",
+  projectId:"restaurantes-nacho-y-maru",
+  storageBucket:"restaurantes-nacho-y-maru.firebasestorage.app",
+  messagingSenderId:"803308936608",
+  appId:"1:803308936608:web:278c8d4ef0c85981f258c5"
+};
+
+let map, svc, auto, db, markers = {}, places = {};
+let curPlace = null, curCat = 'want', curUser = null, photos = [];
+let stimer = null;
+
+function setUser(name) {
+  curUser = name;
+  document.getElementById('user-screen').style.display = 'none';
+  const app = document.getElementById('main-app');
+  app.classList.add('visible');
+  const dot = document.getElementById('who-dot');
+  dot.textContent = name[0];
+  dot.className = 'who-dot ' + (name === 'Nacho' ? 'who-dot-n' : 'who-dot-m');
+  document.getElementById('who-name').textContent = name;
+  initApp();
+}
+
+function switchUser() {
+  document.getElementById('main-app').classList.remove('visible');
+  document.getElementById('user-screen').style.display = 'flex';
+}
+
+async function initApp() {
+  await loadFB();
+  await loadGM();
+  map = new google.maps.Map(document.getElementById('map'), {
+    center:{lat:-34.6037,lng:-58.3816}, zoom:13,
+    mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
+    zoomControlOptions:{position:google.maps.ControlPosition.RIGHT_CENTER},
+    styles:[
+      {elementType:'geometry',stylers:[{color:'#1a1a2e'}]},
+      {elementType:'labels.text.stroke',stylers:[{color:'#1a1a2e'}]},
+      {elementType:'labels.text.fill',stylers:[{color:'#a09cb0'}]},
+      {featureType:'road',elementType:'geometry',stylers:[{color:'#26263d'}]},
+      {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#0f0f1a'}]},
+      {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#2d2d4a'}]},
+      {featureType:'water',elementType:'geometry',stylers:[{color:'#0d0d1a'}]},
+      {featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]},
+      {featureType:'transit',elementType:'labels',stylers:[{visibility:'off'}]},
+      {featureType:'administrative',elementType:'geometry',stylers:[{color:'#26263d'}]},
+      {featureType:'landscape',elementType:'geometry',stylers:[{color:'#16162a'}]}
+    ]
+  });
+  svc = new google.maps.places.PlacesService(map);
+  auto = new google.maps.places.AutocompleteService();
+  listenPlaces();
+  hideSplash();
+}
+
+function hideSplash() {
+  setTimeout(() => { document.getElementById('splash').classList.add('hidden'); }, 600);
+}
+
+function loadFB() {
+  return new Promise(res => {
+    if (window.firebase) { res(); return; }
+    const s1 = document.createElement('script');
+    s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-app-compat.min.js';
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-database-compat.min.js';
+      s2.onload = () => {
+        firebase.initializeApp(FBC);
+        db = firebase.database();
+        document.getElementById('sync-dot').classList.add('on');
+        document.getElementById('sync-label').textContent = 'Sincronizado';
+        res();
+      };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  });
+}
+
+function loadGM() {
+  return new Promise(res => {
+    if (window.google && window.google.maps) { res(); return; }
+    window.__gmc = res;
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GKEY}&libraries=places&callback=__gmc`;
+    s.async = true; document.head.appendChild(s);
+  });
+}
+
+function listenPlaces() {
+  db.ref('places').on('value', snap => {
+    const data = snap.val() || {};
+    Object.keys(places).filter(id => !data[id]).forEach(id => {
+      if (markers[id]) { markers[id].setMap(null); delete markers[id]; }
+    });
+    places = data;
+    Object.values(places).forEach(p => addMarker(p));
+    renderLists();
+  });
+}
+
+function pinSvg(cat) {
+  const c = cat === 'want' ? '#6fcf97' : '#f2994a';
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg width="30" height="38" viewBox="0 0 30 38" xmlns="http://www.w3.org/2000/svg"><path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.716 23.284 0 15 0z" fill="${c}"/><circle cx="15" cy="15" r="6.5" fill="white"/></svg>`)}`;
+}
+
+function addMarker(p) {
+  if (!p || !p.id) return;
+  if (markers[p.id]) markers[p.id].setMap(null);
+  const mk = new google.maps.Marker({
+    position:{lat:p.lat,lng:p.lng}, map, title:p.name,
+    icon:{url:pinSvg(p.category), scaledSize:new google.maps.Size(28,36), anchor:new google.maps.Point(14,36)}
+  });
+  const byC = p.addedBy==='Nacho'?'#7eb8f7':'#f7a8c4';
+  const catL = p.category==='want'?'Quiero ir':'Ya fui';
+  const catBg = p.category==='want'?'rgba(111,207,151,0.15)':'rgba(242,153,74,0.15)';
+  const catC = p.category==='want'?'#6fcf97':'#f2994a';
+  const ph = p.photos&&p.photos.length ? `<div style="display:flex;gap:4px;margin-top:8px;">${p.photos.slice(0,3).map(x=>`<img src="${x}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;"/>`).join('')}</div>` : '';
+  const info = new google.maps.InfoWindow({content:`<div style="font-family:'DM Sans',sans-serif;max-width:200px;padding:4px 2px;background:#1e1e30;color:#f0ede8;border-radius:10px;">
+    <div style="font-weight:600;font-size:14px;margin-bottom:3px;">${p.name}</div>
+    <div style="font-size:11px;color:#6b6880;margin-bottom:6px;">${p.address||''}</div>
+    <span style="background:${catBg};color:${catC};font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;">${catL}</span>
+    ${p.note?`<div style="margin-top:7px;font-size:12px;color:#a09cb0;font-style:italic;">${p.note}</div>`:''}
+    ${ph}
+    <div style="margin-top:7px;font-size:11px;font-weight:600;color:${byC};">${p.addedBy}</div>
+  </div>`});
+  mk.addListener('click', () => info.open(map, mk));
+  markers[p.id] = mk;
+}
+
+function openDrawer() {
+  curPlace=null; curCat='want'; photos=[];
+  document.getElementById('search-input').value='';
+  document.getElementById('places-dropdown').style.display='none';
+  document.getElementById('places-dropdown').innerHTML='';
+  document.getElementById('form-body').style.display='none';
+  document.getElementById('save-btn').style.display='none';
+  document.getElementById('note-input').value='';
+  document.getElementById('photo-row').innerHTML='';
+  document.getElementById('btn-want').className='cat-btn sel-want';
+  document.getElementById('btn-been').className='cat-btn';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  setTimeout(()=>document.getElementById('search-input').focus(),350);
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function setCat(c) {
+  curCat=c;
+  document.getElementById('btn-want').className='cat-btn'+(c==='want'?' sel-want':'');
+  document.getElementById('btn-been').className='cat-btn'+(c==='been'?' sel-been':'');
+}
+
+function onSearchInput() {
+  clearTimeout(stimer);
+  const v = document.getElementById('search-input').value.trim();
+  const dd = document.getElementById('places-dropdown');
+  if (v.length<2) { dd.style.display='none'; return; }
+  stimer = setTimeout(()=>{
+    dd.innerHTML='<div class="search-hint">Buscando...</div>';
+    dd.style.display='block';
+    auto.getPlacePredictions({input:v,types:['establishment']},(preds,st)=>{
+      if(st!==google.maps.places.PlacesServiceStatus.OK||!preds){
+        dd.innerHTML='<div class="search-hint">Sin resultados</div>'; return;
+      }
+      dd.innerHTML='';
+      preds.slice(0,5).forEach(p=>{
+        const d=document.createElement('div');
+        d.className='place-option';
+        d.innerHTML=`<div class="place-option-name">${p.structured_formatting.main_text}</div><div class="place-option-addr">${p.structured_formatting.secondary_text||''}</div>`;
+        d.onclick=()=>pickPlace(p);
+        dd.appendChild(d);
+      });
+    });
+  },400);
+}
+
+function pickPlace(pred) {
+  document.getElementById('search-input').value=pred.structured_formatting.main_text;
+  document.getElementById('places-dropdown').style.display='none';
+  svc.getDetails({placeId:pred.place_id,fields:['name','geometry','formatted_address']},(pl,st)=>{
+    if(st!==google.maps.places.PlacesServiceStatus.OK) return;
+    curPlace={id:pred.place_id,name:pl.name,address:pl.formatted_address,lat:pl.geometry.location.lat(),lng:pl.geometry.location.lng()};
+    map.panTo({lat:curPlace.lat,lng:curPlace.lng});
+    document.getElementById('form-body').style.display='block';
+    document.getElementById('save-btn').style.display='block';
+  });
+}
+
+function onPhotos() {
+  const files = document.getElementById('photo-input').files;
+  const row = document.getElementById('photo-row');
+  Array.from(files).forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      photos.push(e.target.result);
+      const img=document.createElement('img');
+      img.src=e.target.result; img.className='photo-preview-thumb';
+      row.appendChild(img);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+async function savePlace() {
+  if(!curPlace) return;
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true; btn.textContent='Guardando...';
+  const entry={...curPlace,category:curCat,note:document.getElementById('note-input').value.trim(),photos,addedBy:curUser,savedAt:Date.now()};
+  await db.ref('places/'+entry.id).set(entry);
+  btn.disabled=false; btn.textContent='Guardar lugar';
+  closeDrawer();
+}
+
+async function deletePlace(id) {
+  if(!confirm('¿Eliminar este lugar?')) return;
+  await db.ref('places/'+id).remove();
+}
+
+function renderLists() {
+  const all=Object.values(places).sort((a,b)=>b.savedAt-a.savedAt);
+  const want=all.filter(p=>p.category==='want');
+  const been=all.filter(p=>p.category==='been');
+  let html='';
+  if(!want.length&&!been.length) {
+    html=`<div class="empty-state"><i class="ti ti-map-pin"></i><p>Todavía no hay lugares guardados.<br/>Tocá <strong>+</strong> para agregar el primero.</p></div>`;
+  } else {
+    if(want.length){
+      html+=`<div class="section-header">Quiero ir · ${want.length}</div>`;
+      html+=want.map(cardHTML).join('');
+    }
+    if(been.length){
+      html+=`<div class="section-header" style="margin-top:${want.length?'8px':'0'}">Ya fui · ${been.length}</div>`;
+      html+=been.map(cardHTML).join('');
+    }
+  }
+  document.getElementById('lists-content').innerHTML=html;
+}
+
+function cardHTML(p) {
+  const byClass=p.addedBy==='Nacho'?'by-n':'by-m';
+  const photos=p.photos&&p.photos.length?`<div class="photos-strip">${p.photos.map(x=>`<img src="${x}"/>`).join('')}</div>`:'';
+  return `<div class="place-card">
+    <div class="place-card-inner">
+      <div class="place-card-top">
+        <div>
+          <div class="place-card-name">${p.name}</div>
+          <div class="place-card-addr">${p.address||''}</div>
+        </div>
+        <button class="delete-btn" onclick="deletePlace('${p.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+      ${p.note?`<div class="place-card-note">"${p.note}"</div>`:''}
+      <div class="place-card-footer">
+        <span class="cat-badge ${p.category==='want'?'badge-want':'badge-been'}">${p.category==='want'?'Quiero ir':'Ya fui'}</span>
+        <span class="by-badge ${byClass}">${p.addedBy}</span>
+      </div>
+    </div>
+    ${photos}
+  </div>`;
+}
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='map-page'&&window.google) setTimeout(()=>google.maps.event.trigger(map,'resize'),100);
+}
+</script>
+</body>
+</html>
