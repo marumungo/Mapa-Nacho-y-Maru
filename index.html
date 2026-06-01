@@ -237,7 +237,7 @@
 <body>
 
 <!-- SPLASH -->
-<div id="splash">
+<div id="splash" style="display:none;">
   <div class="splash-emoji">🍽️</div>
   <div class="splash-title">Nacho & Maru</div>
   <div class="splash-sub">Cargando el mapa...</div>
@@ -343,6 +343,7 @@ let curPlace = null, curCat = 'want', curUser = null, photos = [];
 let stimer = null;
 
 function setUser(name) {
+  console.log('usuario seleccionado', name);
   curUser = name;
   document.getElementById('user-screen').style.display = 'none';
   const app = document.getElementById('main-app');
@@ -360,6 +361,7 @@ function switchUser() {
 }
 
 async function initApp() {
+  console.log('initApp iniciado');
   await loadFB();
   await loadGM();
   map = new google.maps.Map(document.getElementById('map'), {
@@ -383,7 +385,7 @@ async function initApp() {
   svc = new google.maps.places.PlacesService(map);
   auto = new google.maps.places.AutocompleteService();
   listenPlaces();
-  hideSplash();
+  // hideSplash();
 }
 
 function hideSplash() {
