@@ -321,10 +321,10 @@
         class="drawer-input"
         id="rating-input"
         type="number"
-        min="1"
-        max="10"
+        min="0"
+        max="5"
         step="0.5"
-        placeholder="Ej: 8.5"
+        placeholder="Ej: 4.5"
       />
     </div>
     <div class="drawer-section">
@@ -560,11 +560,34 @@ function onPhotos() {
 
 async function savePlace() {
   if(!curPlace) return;
-  const btn=document.getElementById('save-btn');
-  btn.disabled=true; btn.textContent='Guardando...';
-  const entry={...curPlace,category:curCat,note:document.getElementById('note-input').value.trim(),rating: parseFloat(document.getElementById('rating-input').value) || null,photos,addedBy:curUser,savedAt:Date.now()};
-  await db.ref('places/'+entry.id).set(entry);
-  btn.disabled=false; btn.textContent='Guardar lugar';
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  const ratingRaw =
+    document.getElementById('rating-input').value.trim();
+  const ratingValue =
+    ratingRaw === '' ? null : parseFloat(ratingRaw);
+  if(
+    ratingValue !== null &&
+    (isNaN(ratingValue) || ratingValue < 0 || ratingValue > 5)
+  ){
+    alert('La puntuación debe estar entre 0 y 5 ⭐');
+    btn.disabled = false;
+    btn.textContent = 'Guardar lugar';
+    return;
+  }
+  const entry = {
+    ...curPlace,
+    category: curCat,
+    note: document.getElementById('note-input').value.trim(),
+    rating: ratingValue,
+    photos,
+    addedBy: curUser,
+    savedAt: Date.now()
+  };
+  await db.ref('places/' + entry.id).set(entry);
+  btn.disabled = false;
+  btn.textContent = 'Guardar lugar';
   closeDrawer();
 }
 
