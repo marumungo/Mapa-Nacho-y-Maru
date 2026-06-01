@@ -228,6 +228,13 @@
   .save-btn:disabled { opacity: 0.4; }
   .save-btn:active { transform: scale(0.98); }
   .search-hint { font-size: 12px; color: var(--text3); padding: 10px 14px; }
+  .gallery-modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:9999;}
+  .gallery-modal.open{display:flex;}
+  .gallery-image{max-width:90%;max-height:85%;border-radius:16px;object-fit:contain;}
+  .gallery-close{position:absolute;top:20px;right:20px;width:40px;height:40px;border:none;border-radius:50%;cursor:pointer;}
+  .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border:none;border-radius:50%;cursor:pointer;font-size:24px;}
+  .gallery-prev{left:20px;}
+  .gallery-next{right:20px;}
 </style>
 </head>
 <body>
@@ -380,6 +387,8 @@ let curPlace = null,
     curUser = null,
     photos = [],
     editingPlaceId = null;
+let galleryPhotos = [];
+let galleryIndex = 0;
 let stimer = null;
 let sortMode = 'recent';
 
@@ -606,6 +615,46 @@ function removePhoto(index){
   renderPhotoRow();
 }
 
+function openGallery(photos,index){
+  galleryPhotos = photos;
+  galleryIndex = index;
+  updateGallery();
+  document
+    .getElementById('gallery-modal')
+    .classList
+    .add('open');
+}
+
+function closeGallery(){
+  document
+    .getElementById('gallery-modal')
+    .classList
+    .remove('open');
+}
+
+function updateGallery(){
+  document
+    .getElementById('gallery-image')
+    .src =
+      galleryPhotos[galleryIndex];
+}
+
+function nextPhoto(){
+  galleryIndex =
+    (galleryIndex + 1) %
+    galleryPhotos.length;
+
+  updateGallery();
+}
+
+function prevPhoto(){
+  galleryIndex =
+    (galleryIndex - 1 + galleryPhotos.length) %
+    galleryPhotos.length;
+
+  updateGallery();
+}
+
 function onPhotos() {
   const files = document.getElementById('photo-input').files;
   Array.from(files).forEach(f=>{
@@ -717,8 +766,7 @@ function renderLists() {
 
 function cardHTML(p) {
   const byClass=p.addedBy==='Nacho'?'by-n':'by-m';
-  const photos=p.photos&&p.photos.length?`<div class="photos-strip">${p.photos.map(x=>`<img src="${x}"/>`).join('')}</div>`:'';
-  return `<div class="place-card">   
+  const photos=p.photos&&p.photos.length?`<div class="photos-strip">${p.photos.map((x,index)=>`<img src="${x}" onclick="event.stopPropagation();openGallery(places['${p.id}'].photos,${index})"/>`).join('')}</div>`:'';  return `<div class="place-card">   
     <div class="place-card-inner">
       <div class="place-card-top">
         <div>
@@ -839,5 +887,25 @@ function showPage(id, btn) {
   if(id==='map-page'&&window.google) setTimeout(()=>google.maps.event.trigger(map,'resize'),100);
 }
 </script>
+<div id="gallery-modal" class="gallery-modal">
+  <button
+    class="gallery-nav gallery-prev"
+    onclick="prevPhoto()">
+    ‹
+  </button>
+  <img
+    id="gallery-image"
+    class="gallery-image">
+  <button
+    class="gallery-nav gallery-next"
+    onclick="nextPhoto()">
+    ›
+  </button>
+  <button
+    class="gallery-close"
+    onclick="closeGallery()">
+    ✕
+  </button>
+</div>
 </body>
 </html>
