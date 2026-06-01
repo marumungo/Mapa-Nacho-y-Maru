@@ -585,7 +585,7 @@ function pickPlace(pred) {
       address:pl.formatted_address,
       lat:pl.geometry.location.lat(),
       lng:pl.geometry.location.lng(),
-      googleMapsUrl:`https://www.google.com/maps/place/?q=place_id:${pred.place_id}`
+      googleMapsUrl:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pl.name)}&query_place_id=${pred.place_id}`
     };    
     map.panTo({lat:curPlace.lat,lng:curPlace.lng});
     document.getElementById('form-body').style.display='block';
