@@ -222,14 +222,9 @@
   .photo-label i { font-size: 20px; }
   .photo-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .photo-preview-thumb { width: 68px; height: 68px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-  .save-btn {
-    width: calc(100% - 44px); margin: 18px 22px 0;
-    padding: 15px; border-radius: var(--radius-sm);
-    background: var(--text); color: var(--bg);
-    border: none; font-size: 15px; font-weight: 600;
-    font-family: 'DM Sans', sans-serif; cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-  }
+  .photo-thumb-wrap{ position:relative; width:68px; height:68px;}
+  .photo-remove-btn{ position:absolute; top:-6px; right:-6px; width:22px; height:22px; border:none; border-radius:50%; background:#ff5f57; color:white; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2;}
+  .save-btn { width: calc(100% - 44px); margin: 18px 22px 0; padding: 15px; border-radius: var(--radius-sm); background: var(--text); color: var(--bg); border: none; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.15s, transform 0.1s;}
   .save-btn:disabled { opacity: 0.4; }
   .save-btn:active { transform: scale(0.98); }
   .search-hint { font-size: 12px; color: var(--text3); padding: 10px 14px; }
@@ -286,6 +281,23 @@
     <button class="fab" onclick="openDrawer()"><i class="ti ti-plus"></i></button>
   </div>
   <div class="page" id="lists-page">
+    <div style="padding:12px 16px;">
+      <select
+        id="sort-select"
+        onchange="changeSort(this.value)"
+        style="
+          width:100%;
+          background:#26263d;
+          color:#f0ede8;
+          border:1px solid rgba(255,255,255,.08);
+          border-radius:10px;
+          padding:10px;">
+        <option value="recent">Más recientes</option>
+        <option value="best">Mejor puntuados ⭐</option>
+        <option value="worst">Peor puntuados 😅</option>
+        <option value="az">Nombre A-Z</option>
+      </select>
+    </div>
     <div id="lists-content"></div>
   </div>
 </div>
@@ -314,6 +326,17 @@
     <div class="drawer-section">
       <span class="drawer-label">Comentario</span>
       <textarea class="drawer-input" id="note-input" placeholder="Ej: pedir el asado, ir un martes, reservar..."></textarea>
+    </div>
+    <div
+      class="drawer-section"
+      id="visit-date-section"
+      style="display:none;">
+      <span class="drawer-label">Fecha de visita</span>
+      <input
+        class="drawer-input"
+        id="visit-date-input"
+        type="date"
+      />
     </div>
     <div class="drawer-section" id="rating-section">
       <span class="drawer-label">Puntuación</span>
@@ -352,8 +375,13 @@ const FBC = {
 };
 
 let map, svc, auto, db, markers = {}, places = {};
-let curPlace = null, curCat = 'want', curUser = null, photos = [];
+let curPlace = null,
+    curCat = 'want',
+    curUser = null,
+    photos = [],
+    editingPlaceId = null;
 let stimer = null;
+let sortMode = 'recent';
 
 function setUser(name) {
   console.log('usuario seleccionado', name);
@@ -479,6 +507,7 @@ function addMarker(p) {
 
 function openDrawer() {
   curPlace=null; curCat='want'; photos=[];
+  editingPlaceId = null;
   document.getElementById('search-input').value='';
   document.getElementById('places-dropdown').style.display='none';
   document.getElementById('places-dropdown').innerHTML='';
@@ -486,12 +515,16 @@ function openDrawer() {
   document.getElementById('save-btn').style.display='none';
   document.getElementById('note-input').value='';
   document.getElementById('rating-input').value = '';
+  document.getElementById('visit-date-input').value = '';
   document.getElementById('rating-section').style.display='none';
   document.getElementById('photo-row').innerHTML='';
   document.getElementById('btn-want').className='cat-btn sel-want';
   document.getElementById('btn-been').className='cat-btn';
+  document.querySelector('.drawer-title').textContent = 'Agregar lugar';
+  document.getElementById('save-btn').textContent = 'Guardar lugar';
   document.getElementById('overlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
+  document.getElementById('photo-input').value = '';
   setTimeout(()=>document.getElementById('search-input').focus(),350);
 }
 
@@ -501,10 +534,11 @@ function closeDrawer() {
 }
 
 function setCat(c) {
-  curCat=c;
-  document.getElementById('rating-section').style.display =c==='been' ? 'block' : 'none';
-  document.getElementById('btn-want').className='cat-btn'+(c==='want'?' sel-want':'');
-  document.getElementById('btn-been').className='cat-btn'+(c==='been'?' sel-been':'');
+  curCat = c;
+  document.getElementById('rating-section').style.display = c === 'been' ? 'block' : 'none';
+  document.getElementById('visit-date-section').style.display = c === 'been' ? 'block' : 'none';
+  document.getElementById('btn-want').className = 'cat-btn' + (c === 'want' ? ' sel-want' : '');
+  document.getElementById('btn-been').className = 'cat-btn' + (c === 'been' ? ' sel-been' : '');
 }
 
 function onSearchInput() {
@@ -536,23 +570,49 @@ function pickPlace(pred) {
   document.getElementById('places-dropdown').style.display='none';
   svc.getDetails({placeId:pred.place_id,fields:['name','geometry','formatted_address']},(pl,st)=>{
     if(st!==google.maps.places.PlacesServiceStatus.OK) return;
-    curPlace={id:pred.place_id,name:pl.name,address:pl.formatted_address,lat:pl.geometry.location.lat(),lng:pl.geometry.location.lng()};
+    curPlace={
+      id:pred.place_id,
+      name:pl.name,
+      address:pl.formatted_address,
+      lat:pl.geometry.location.lat(),
+      lng:pl.geometry.location.lng(),
+      googleMapsUrl:`https://www.google.com/maps/place/?q=place_id:${pred.place_id}`
+    };    
     map.panTo({lat:curPlace.lat,lng:curPlace.lng});
     document.getElementById('form-body').style.display='block';
     document.getElementById('save-btn').style.display='block';
   });
 }
 
+function renderPhotoRow(){
+  const row =
+    document.getElementById('photo-row');
+  row.innerHTML = photos.map((photo,index)=>`
+    <div class="photo-thumb-wrap">
+      <button
+        class="photo-remove-btn"
+        onclick="removePhoto(${index})">
+        ✕
+      </button>
+      <img
+        src="${photo}"
+        class="photo-preview-thumb">
+    </div>
+  `).join('');
+}
+
+function removePhoto(index){
+  photos.splice(index,1);
+  renderPhotoRow();
+}
+
 function onPhotos() {
   const files = document.getElementById('photo-input').files;
-  const row = document.getElementById('photo-row');
   Array.from(files).forEach(f=>{
     const r=new FileReader();
     r.onload=e=>{
       photos.push(e.target.result);
-      const img=document.createElement('img');
-      img.src=e.target.result; img.className='photo-preview-thumb';
-      row.appendChild(img);
+      renderPhotoRow();
     };
     r.readAsDataURL(f);
   });
@@ -581,9 +641,13 @@ async function savePlace() {
     category: curCat,
     note: document.getElementById('note-input').value.trim(),
     rating: ratingValue,
-    photos,
+    visitedAt: document.getElementById('visit-date-input').value || null,
+    photos: photos || [],
     addedBy: curUser,
-    savedAt: Date.now()
+    savedAt:
+      places[curPlace.id]?.savedAt || Date.now(),
+    updatedAt:
+      Date.now()
   };
   await db.ref('places/' + entry.id).set(entry);
   btn.disabled = false;
@@ -596,8 +660,43 @@ async function deletePlace(id) {
   await db.ref('places/'+id).remove();
 }
 
+function changeSort(mode){
+  sortMode = mode;
+  renderLists();
+}
+
 function renderLists() {
-  const all=Object.values(places).sort((a,b)=>b.savedAt-a.savedAt);
+  const all = Object.values(places);
+  switch(sortMode){
+    case 'best':
+      all.sort((a,b)=>{
+        if(a.rating == null) return 1;
+        if(b.rating == null) return -1;
+        return b.rating - a.rating;
+      });
+      break;
+    case 'worst':
+      all.sort((a,b)=>{
+        if(a.rating == null) return 1;
+        if(b.rating == null) return -1;
+        return a.rating - b.rating;
+      });
+      break;
+    case 'az':
+      all.sort((a,b)=>
+        a.name.localeCompare(b.name)
+      );
+      break;
+    default:
+      all.sort((a,b)=>{
+        const da = a.visitedAt
+          ? new Date(a.visitedAt).getTime()
+          : (a.savedAt || 0);
+        const db = b.visitedAt
+          ? new Date(b.visitedAt).getTime()
+          : (b.savedAt || 0);
+        return db - da;
+      });}  
   const want=all.filter(p=>p.category==='want');
   const been=all.filter(p=>p.category==='been');
   let html='';
@@ -619,15 +718,50 @@ function renderLists() {
 function cardHTML(p) {
   const byClass=p.addedBy==='Nacho'?'by-n':'by-m';
   const photos=p.photos&&p.photos.length?`<div class="photos-strip">${p.photos.map(x=>`<img src="${x}"/>`).join('')}</div>`:'';
-  return `<div class="place-card">
+  return `<div class="place-card">   
     <div class="place-card-inner">
       <div class="place-card-top">
         <div>
           <div class="place-card-name">${p.name}</div>
           <div class="place-card-addr">${p.address||''}</div>
+          ${p.googleMapsUrl ? `
+            <div style="margin-top:4px;">
+              <a
+                href="${p.googleMapsUrl}"
+                target="_blank"
+                style="
+                  color:#7eb8f7;
+                  font-size:12px;
+                  text-decoration:none;
+                "
+              >
+                Ver en Google Maps ↗
+              </a>
+            </div>
+          ` : ''}
+          ${p.visitedAt ? `
+            <div style="
+              margin-top:4px;
+              font-size:12px;
+              color:#a09cb0;
+            ">
+              📅 ${p.visitedAt}
+            </div>
+          ` : ''}
           ${p.rating ? `<div style="margin-top:4px;font-size:13px;font-weight:600;color:#f2c94c;">⭐ ${p.rating}</div>` : ''}
         </div>
-        <button class="delete-btn" onclick="deletePlace('${p.id}')"><i class="ti ti-trash"></i></button>
+        <div style="display:flex;gap:6px;">
+          <button
+            class="delete-btn"
+            onclick="editPlace('${p.id}')">
+            <i class="ti ti-edit"></i>
+          </button>
+          <button
+            class="delete-btn"
+            onclick="deletePlace('${p.id}')">
+            <i class="ti ti-trash"></i>
+          </button>
+        </div>
       </div>
       ${p.note?`<div class="place-card-note">"${p.note}"</div>`:''}
       <div class="place-card-footer">
@@ -636,7 +770,7 @@ function cardHTML(p) {
         </span>
         ${
           p.category==='want'
-            ? `<button class="been-btn" onclick="openBeenDrawer('${p.id}')">
+            ? `<button class="been-btn" onclick="event.stopPropagation();openBeenDrawer('${p.id}')">
                 ✓ Ya fui
               </button>`
             : ''
@@ -656,16 +790,45 @@ function openBeenDrawer(id){
   openDrawer();
   curPlace = p;
   curCat = 'been';
-  document.getElementById('search-input').value =
-    p.name;
+  document.getElementById('search-input').value = p.name;
   document.getElementById('form-body').style.display='block';
   document.getElementById('save-btn').style.display='block';
-  document.getElementById('note-input').value =
-    p.note || '';
-  document.getElementById('rating-input').value =
-    p.rating || '';
+  document.getElementById('note-input').value = p.note || '';
+  document.getElementById('rating-input').value = p.rating || '';
+  document.getElementById('visit-date-input').value = p.visitedAt || '';
+  photos = [...(p.photos || [])];
+  renderPhotoRow();
   document.getElementById('rating-section').style.display='block';
   setCat('been');
+}
+
+function editPlace(id){
+  const p = places[id];
+  if(!p) return;
+  openDrawer();
+  editingPlaceId = id;
+  curPlace = {
+    id:p.id,
+    name:p.name,
+    address:p.address,
+    lat:p.lat,
+    lng:p.lng,
+    googleMapsUrl:p.googleMapsUrl
+  };
+  curCat = p.category;
+  document.getElementById('search-input').value = p.name;
+  document.getElementById('form-body').style.display = 'block';
+  document.getElementById('save-btn').style.display = 'block';
+  document.getElementById('note-input').value = p.note || '';
+  document.getElementById('rating-input').value = p.rating || '';
+  document.getElementById('visit-date-input').value = p.visitedAt || '';
+  photos = [...(p.photos || [])];
+  renderPhotoRow();
+  setCat(p.category);
+  document.querySelector('.drawer-title').textContent =
+    'Editar lugar';
+  document.getElementById('save-btn').textContent =
+    'Guardar cambios';
 }
 
 function showPage(id, btn) {
