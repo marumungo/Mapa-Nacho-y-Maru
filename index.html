@@ -449,17 +449,24 @@ function loadFB() {
     s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-app-compat.min.js';
     s1.onload = () => {
       const s2 = document.createElement('script');
-      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-database-compat.min.js';
+      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-auth-compat.min.js';
       s2.onload = () => {
-        firebase.initializeApp(FBC);
-        db = firebase.database();
-        document.getElementById('sync-dot').classList.add('on');
-        document.getElementById('sync-label').textContent = 'Sincronizado';
-        res();
+        const s3 = document.createElement('script');
+        s3.src = 'https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-database-compat.min.js';
+        s3.onload = async () => {
+          firebase.initializeApp(FBC);
+          await firebase.auth().signInAnonymously();
+          db = firebase.database();
+          document.getElementById('sync-dot').classList.add('on');
+          document.getElementById('sync-label').textContent = 'Sincronizado';
+          res();
+        };
+        document.head.appendChild(s3);
       };
       document.head.appendChild(s2);
     };
-    document.head.appendChild(s1);
+
+document.head.appendChild(s1);
   });
 }
 
