@@ -361,7 +361,7 @@
       <div class="star-rating" id="rating-stars"></div>
     </div>
     <div class="drawer-section" id="torti-section">
-      <span class="drawer-label">Tortiestrellas 🌮</span>
+      <span class="drawer-label">Tortiestrellas</span>
       <div class="star-rating torti" id="torti-stars"></div>
     </div>
     <div class="drawer-section">
@@ -547,7 +547,7 @@ function addMarker(p) {
     <span style="background:${catBg};color:${catC};font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;">${catL}</span>
     ${p.note?`<div style="margin-top:7px;font-size:12px;color:#a09cb0;font-style:italic;">${p.note}</div>`:''}
     ${p.rating?`<div style="margin-top:5px;font-size:12px;font-weight:600;color:#f2c94c;">${starDisplay(Math.round(p.rating))}</div>`:''}
-    ${p.tortiRating?`<div style="margin-top:2px;font-size:12px;font-weight:600;color:#f2994a;">🌮 ${starDisplay(Math.round(p.tortiRating))}</div>`:''}
+    ${p.tortiRating?`<div style="margin-top:2px;font-size:12px;font-weight:600;color:#f2994a;">${starDisplay(Math.round(p.tortiRating))}</div>`:''}
     ${ph}
     <div style="margin-top:7px;font-size:11px;font-weight:600;color:${byC};">${p.addedBy}</div>
   </div>`});
@@ -829,7 +829,7 @@ function cardHTML(p) {
             </div>
           ` : ''}
           ${p.rating ? `<div style="margin-top:4px;font-size:13px;font-weight:600;color:#f2c94c;">${starDisplay(Math.round(p.rating))}</div>` : ''}
-          ${p.tortiRating ? `<div style="margin-top:2px;font-size:13px;font-weight:600;color:#f2994a;">🌮 ${starDisplay(Math.round(p.tortiRating))}</div>` : ''}
+          ${p.tortiRating ? `<div style="margin-top:2px;font-size:13px;font-weight:600;color:#f2994a;">${starDisplay(Math.round(p.tortiRating))}</div>` : ''}
         </div>
         <div style="display:flex;gap:6px;">
           <button
