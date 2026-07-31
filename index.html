@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-title" content="Nacho & Maru"/>
 <meta name="theme-color" content="#0f0f1a"/>
 <title>Nacho & Maru 🍽️</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<link rel="manifest" href="manifest.webmanifest"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -228,6 +232,13 @@
   .save-btn:disabled { opacity: 0.4; }
   .save-btn:active { transform: scale(0.98); }
   .search-hint { font-size: 12px; color: var(--text3); padding: 10px 14px; }
+  .star-rating { display: flex; gap: 8px; }
+  .star-rating i { font-size: 30px; color: var(--border2); cursor: pointer; transition: transform 0.1s; }
+  .star-rating i:active { transform: scale(0.85); }
+  .star-rating i.ti-star-filled { color: #f2c94c; }
+  .star-rating.torti i.ti-star-filled { color: #f2994a; }
+  .card-rating { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 13px; font-weight: 600; }
+  .card-rating .stars-off { color: var(--text3); }
   .gallery-modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:9999;}
   .gallery-modal.open{display:flex;}
   .gallery-image{max-width:90%;max-height:85%;border-radius:16px;object-fit:contain;}
@@ -347,15 +358,11 @@
     </div>
     <div class="drawer-section" id="rating-section">
       <span class="drawer-label">Puntuación</span>
-      <input
-        class="drawer-input"
-        id="rating-input"
-        type="number"
-        min="0"
-        max="5"
-        step="0.5"
-        placeholder="Ej: 4.5"
-      />
+      <div class="star-rating" id="rating-stars"></div>
+    </div>
+    <div class="drawer-section" id="torti-section">
+      <span class="drawer-label">Tortiestrellas 🌮</span>
+      <div class="star-rating torti" id="torti-stars"></div>
     </div>
     <div class="drawer-section">
       <span class="drawer-label">Fotos</span>
@@ -492,6 +499,31 @@ function listenPlaces() {
   });
 }
 
+function starsHTML(containerId, current) {
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    html += `<i class="ti ${i <= current ? 'ti-star-filled' : 'ti-star'}" onclick="setStars('${containerId}',${i})"></i>`;
+  }
+  return html;
+}
+
+function setStars(containerId, val) {
+  const el = document.getElementById(containerId);
+  const cur = parseInt(el.dataset.value || '0');
+  const newVal = cur === val ? 0 : val;
+  el.dataset.value = newVal;
+  el.innerHTML = starsHTML(containerId, newVal);
+}
+
+function getStars(containerId) {
+  const v = parseInt(document.getElementById(containerId).dataset.value || '0');
+  return v > 0 ? v : null;
+}
+
+function starDisplay(n) {
+  return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
 function pinSvg(cat) {
   const c = cat === 'want' ? '#6fcf97' : '#f2994a';
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg width="30" height="38" viewBox="0 0 30 38" xmlns="http://www.w3.org/2000/svg"><path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.716 23.284 0 15 0z" fill="${c}"/><circle cx="15" cy="15" r="6.5" fill="white"/></svg>`)}`;
@@ -514,6 +546,8 @@ function addMarker(p) {
     <div style="font-size:11px;color:#6b6880;margin-bottom:6px;">${p.address||''}</div>
     <span style="background:${catBg};color:${catC};font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;">${catL}</span>
     ${p.note?`<div style="margin-top:7px;font-size:12px;color:#a09cb0;font-style:italic;">${p.note}</div>`:''}
+    ${p.rating?`<div style="margin-top:5px;font-size:12px;font-weight:600;color:#f2c94c;">${starDisplay(Math.round(p.rating))}</div>`:''}
+    ${p.tortiRating?`<div style="margin-top:2px;font-size:12px;font-weight:600;color:#f2994a;">🌮 ${starDisplay(Math.round(p.tortiRating))}</div>`:''}
     ${ph}
     <div style="margin-top:7px;font-size:11px;font-weight:600;color:${byC};">${p.addedBy}</div>
   </div>`});
@@ -530,9 +564,11 @@ function openDrawer() {
   document.getElementById('form-body').style.display='none';
   document.getElementById('save-btn').style.display='none';
   document.getElementById('note-input').value='';
-  document.getElementById('rating-input').value = '';
+  setStars('rating-stars', 0);
+  setStars('torti-stars', 0);
   document.getElementById('visit-date-input').value = '';
   document.getElementById('rating-section').style.display='none';
+  document.getElementById('torti-section').style.display='none';
   document.getElementById('photo-row').innerHTML='';
   document.getElementById('btn-want').className='cat-btn sel-want';
   document.getElementById('btn-been').className='cat-btn';
@@ -552,6 +588,7 @@ function closeDrawer() {
 function setCat(c) {
   curCat = c;
   document.getElementById('rating-section').style.display = c === 'been' ? 'block' : 'none';
+  document.getElementById('torti-section').style.display = c === 'been' ? 'block' : 'none';
   document.getElementById('visit-date-section').style.display = c === 'been' ? 'block' : 'none';
   document.getElementById('btn-want').className = 'cat-btn' + (c === 'want' ? ' sel-want' : '');
   document.getElementById('btn-been').className = 'cat-btn' + (c === 'been' ? ' sel-been' : '');
@@ -679,24 +716,12 @@ async function savePlace() {
   const btn = document.getElementById('save-btn');
   btn.disabled = true;
   btn.textContent = 'Guardando...';
-  const ratingRaw =
-    document.getElementById('rating-input').value.trim();
-  const ratingValue =
-    ratingRaw === '' ? null : parseFloat(ratingRaw);
-  if(
-    ratingValue !== null &&
-    (isNaN(ratingValue) || ratingValue < 0 || ratingValue > 5)
-  ){
-    alert('La puntuación debe estar entre 0 y 5 ⭐');
-    btn.disabled = false;
-    btn.textContent = 'Guardar lugar';
-    return;
-  }
   const entry = {
     ...curPlace,
     category: curCat,
     note: document.getElementById('note-input').value.trim(),
-    rating: ratingValue,
+    rating: getStars('rating-stars'),
+    tortiRating: getStars('torti-stars'),
     visitedAt: document.getElementById('visit-date-input').value || null,
     photos: photos || [],
     addedBy: curUser,
@@ -803,7 +828,8 @@ function cardHTML(p) {
               📅 ${p.visitedAt}
             </div>
           ` : ''}
-          ${p.rating ? `<div style="margin-top:4px;font-size:13px;font-weight:600;color:#f2c94c;">⭐ ${p.rating}</div>` : ''}
+          ${p.rating ? `<div style="margin-top:4px;font-size:13px;font-weight:600;color:#f2c94c;">${starDisplay(Math.round(p.rating))}</div>` : ''}
+          ${p.tortiRating ? `<div style="margin-top:2px;font-size:13px;font-weight:600;color:#f2994a;">🌮 ${starDisplay(Math.round(p.tortiRating))}</div>` : ''}
         </div>
         <div style="display:flex;gap:6px;">
           <button
@@ -849,11 +875,13 @@ function openBeenDrawer(id){
   document.getElementById('form-body').style.display='block';
   document.getElementById('save-btn').style.display='block';
   document.getElementById('note-input').value = p.note || '';
-  document.getElementById('rating-input').value = p.rating || '';
+  setStars('rating-stars', Math.round(p.rating || 0));
+  setStars('torti-stars', Math.round(p.tortiRating || 0));
   document.getElementById('visit-date-input').value = p.visitedAt || '';
   photos = [...(p.photos || [])];
   renderPhotoRow();
   document.getElementById('rating-section').style.display='block';
+  document.getElementById('torti-section').style.display='block';
   setCat('been');
 }
 
@@ -875,7 +903,8 @@ function editPlace(id){
   document.getElementById('form-body').style.display = 'block';
   document.getElementById('save-btn').style.display = 'block';
   document.getElementById('note-input').value = p.note || '';
-  document.getElementById('rating-input').value = p.rating || '';
+  setStars('rating-stars', Math.round(p.rating || 0));
+  setStars('torti-stars', Math.round(p.tortiRating || 0));
   document.getElementById('visit-date-input').value = p.visitedAt || '';
   photos = [...(p.photos || [])];
   renderPhotoRow();
